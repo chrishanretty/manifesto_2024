@@ -1,0 +1,31 @@
+Mostly automated analysis of the 2024 manifestos
+===
+
+This archive contains materials which will allow you to create
+left-right scores for the party manifestos, starting with the PDFs of
+those manifestos.
+
+In order to replicate the analysis, you will need to know how to use
+both Python and R.
+
+THe first stage is cleaning the PDFs. I've found pdfminer.six does a
+good job of handling multicolumn layouts.
+
+ - python python/con_script.py
+ - python python/lab_script.py
+
+and so on, for the remaining parties. The scripts are lightly
+customised for each party to take account of differing headers and
+typographical conventions.
+
+The second stage is taking the text output and splitting it into
+sentences. That's done in R, via
+
+ - R CMD BATCH R/clean.R
+
+After that, it's back to Python, where we make predictions using a
+pre-trained model. The following command should take care of
+everything, if you've got all the dependencies installed:
+
+ - python python/manifestoberta.py
+

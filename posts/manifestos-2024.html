@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.552">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Chris Hanretty">
+<meta name="dcterms.date" content="2024-06-26">
+
+<title>How left- or right-wing are parties’ 2024 manifestos?</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="manifestos-2024_files/libs/clipboard/clipboard.min.js"></script>
+<script src="manifestos-2024_files/libs/quarto-html/quarto.js"></script>
+<script src="manifestos-2024_files/libs/quarto-html/popper.min.js"></script>
+<script src="manifestos-2024_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="manifestos-2024_files/libs/quarto-html/anchor.min.js"></script>
+<link href="manifestos-2024_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="manifestos-2024_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="manifestos-2024_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="manifestos-2024_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="manifestos-2024_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#what-did-the-parties-talk-most-about" id="toc-what-did-the-parties-talk-most-about" class="nav-link active" data-scroll-target="#what-did-the-parties-talk-most-about">What did the parties talk most about?</a></li>
+  <li><a href="#how-left--or-right-wing-are-they" id="toc-how-left--or-right-wing-are-they" class="nav-link" data-scroll-target="#how-left--or-right-wing-are-they">How left- or right-wing are they?</a></li>
+  <li><a href="#how-have-the-parties-changed-since-2019" id="toc-how-have-the-parties-changed-since-2019" class="nav-link" data-scroll-target="#how-have-the-parties-changed-since-2019">How have the parties changed since 2019?</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">How left- or right-wing are parties’ 2024 manifestos?</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">parties</div>
+    <div class="quarto-category">code</div>
+    <div class="quarto-category">language</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Chris Hanretty </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 26, 2024</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Roughly two weeks ago most of the parties released their 2024 general election manifestos.</p>
+<p>Manifestos are a key source of information about parties’ priorities. They allow us to form expectations about what future governments will do, and allow us to test whether governments did in fact deliver what was promised by the party or parties making up government.</p>
+<p>Manifestos are most used in political science as the basis for inferring parties’ positions on a left-right scale, whether that is on the basis of <a href="https://manifestoproject.wzb.eu/down/papers/budge_right-left-scale.pdf">proportions of “right” and “left-wing” (quasi-)sentences</a>, or some more <a href="https://doi.org/10.1177/13540688211026076">complicated</a> <a href="https://doi.org/10.1111/j.1939-9162.2010.00006.x">transformation</a> of those counts.</p>
+<p>Placing parties on a left-right scale on the basis of their manifesto usually involves coded parts of that sentence in different pre-defined categories. This work can take a long time if performed by humans. Recently it’s become possible to carry out this coding task automatically using large language models. The <a href="https://huggingface.co/manifesto-project/manifestoberta-xlm-roberta-56policy-topics-context-2023-1-1">Manifesto Project itself has fine-tuned a large language model</a> to categorize manifestos.</p>
+<p>In this post, I use that LLM to position the parties on the left-right scale. I’m not the first to do this – Kevin Farnsworth has done the same thing – but I will be sharing all of my materials in case it’s of use to people. My emphasis is on sharing a first approximation rather than a finished product: if I were using this for an academic article I would want to spend longer cleaning the texts and checking the sentence splitting was working properly.</p>
+<section id="what-did-the-parties-talk-most-about" class="level1">
+<h1>What did the parties talk most about?</h1>
+<p>Our first pass at the data has to involve the different Manifesto Project categories themselves. If we can’t understand the distribution of text across topic codes, we can’t understand anything built on those codes.</p>
+<p>With that in mind, here’s the proportion of sentences (or things recognized as sentences by the <code>tidytext</code> package) belonging to the top ten topic codes, in the Labour manifesto.</p>
+<div class="cell">
+<div id="tbl-lab10" class="cell quarto-float anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-lab10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Top ten topic codes in the Labour manifesto
+</figcaption>
+<div aria-describedby="tbl-lab10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Topic</th>
+<th style="text-align: right;">Proportion</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">504 - Welfare State Expansion</td>
+<td style="text-align: right;">0.1200652</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">605 - Law and Order: Positive</td>
+<td style="text-align: right;">0.0934960</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">305 - Political Authority</td>
+<td style="text-align: right;">0.0678734</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">411 - Technology and Infrastructure</td>
+<td style="text-align: right;">0.0569023</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">503 - Equality: Positive</td>
+<td style="text-align: right;">0.0545345</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">506 - Education Expansion</td>
+<td style="text-align: right;">0.0461089</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">301 - Federalism</td>
+<td style="text-align: right;">0.0371837</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">501 - Environmental Protection: Positive</td>
+<td style="text-align: right;">0.0366665</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">403 - Market Regulation</td>
+<td style="text-align: right;">0.0360994</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">701 - Labour Groups: Positive</td>
+<td style="text-align: right;">0.0331945</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>The top entry – welfare state expansion – is perhaps unsurprising to see in the manifesto of a nominally left-wing party. What might be more surprising are that “law and order: positive” and “political authority” are second and third. These two codes are often taken to be (culturally or generally) “right-wing” codes. Let’s see some sample sentences coded as “law and order: positive” (more accurately: sentences for which “law and order: positive” had the highest probability of membership):</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Labour will restore neighbourhood policing with thousands of extra officers, and we will equip officers with the powers they need.
+ - Labour will end the practice of empty warnings by ensuring knife carrying triggers rapid intervention and tough consequences.
+ - Labour will stop the chaos that lets too many criminals act with impunity, turn the page with stronger policing, and rebuild our criminal justice system.
+ - We aim to halve knife crime in a decade.
+ - We will make it easier for high- performing police forces to charge domestic abuse suspects to speed up the process.
+ - Labour will introduce a new Neighbourhood Policing Guarantee, restoring patrols to our town centres by recruiting thousands of new police officers, police and community support officers, and special constables.</code></pre>
+</div>
+</div>
+<p>Now let’s see some sentences which are coded as “political authority”:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>I am absolutely convinced that Keir Starmer is the leader to deliver the change this country needs.
+ - We switched and voted Labour at the local elections.
+ - Only Labour can turn the page.
+ - Because whether it is crashing the pound to give tax cuts to the richest 1%; degrading public services because of a mess made by the banks; or the failure to invest in clean British energy that left us exposed when Putin invaded Ukraine – so much of what Britain has been through in the past 14 years is explained by a Conservative failure to face the future.
+ - In contrast, Labour has been transformed from a party of protest to one that always puts the interests of the country first.
+ - I have changed my party.</code></pre>
+</div>
+</div>
+<p>These sentences seem to be divided between sentences positioning Labour as a party which has authority, and sentences criticising the Conservatives for eroding the authority of the state.</p>
+<p>If Labour wrote most about welfare state expansion, law and order, and political authority, what did the Conservatives write about?</p>
+<div class="cell">
+<div id="tbl-con10" class="cell quarto-float anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-con10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Top ten topic codes in the Conservative manifesto
+</figcaption>
+<div aria-describedby="tbl-con10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Topic</th>
+<th style="text-align: right;">Proportion</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">504 - Welfare State Expansion</td>
+<td style="text-align: right;">0.1164932</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">411 - Technology and Infrastructure</td>
+<td style="text-align: right;">0.0847710</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">605 - Law and Order: Positive</td>
+<td style="text-align: right;">0.0782575</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">503 - Equality: Positive</td>
+<td style="text-align: right;">0.0532497</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">501 - Environmental Protection: Positive</td>
+<td style="text-align: right;">0.0437313</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">506 - Education Expansion</td>
+<td style="text-align: right;">0.0398936</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">402 - Incentives</td>
+<td style="text-align: right;">0.0394108</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">403 - Market Regulation</td>
+<td style="text-align: right;">0.0385882</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">703 - Agriculture and Farmers: Positive</td>
+<td style="text-align: right;">0.0350385</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">104 - Military: Positive</td>
+<td style="text-align: right;">0.0330753</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>The table is surprisingly similar. Seven issues appear in both top ten lists. Just to show you that the classifier is not a stopped clock which always spits out the same probabilities of membership in these categories, here’s the top ten list for the Green Party of England and Wales:</p>
+<div class="cell">
+<div id="tbl-green10" class="cell quarto-float anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-green10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3: Top ten topic codes in the Green party manifesto
+</figcaption>
+<div aria-describedby="tbl-green10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Topic</th>
+<th style="text-align: right;">Proportion</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">501 - Environmental Protection: Positive</td>
+<td style="text-align: right;">0.1527127</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">504 - Welfare State Expansion</td>
+<td style="text-align: right;">0.1234883</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">416 - Anti-Growth Economy: Positive</td>
+<td style="text-align: right;">0.0881110</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">503 - Equality: Positive</td>
+<td style="text-align: right;">0.0851554</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">403 - Market Regulation</td>
+<td style="text-align: right;">0.0426745</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">605 - Law and Order: Positive</td>
+<td style="text-align: right;">0.0421714</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">411 - Technology and Infrastructure</td>
+<td style="text-align: right;">0.0384761</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">701 - Labour Groups: Positive</td>
+<td style="text-align: right;">0.0360142</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">506 - Education Expansion</td>
+<td style="text-align: right;">0.0317049</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">301 - Federalism</td>
+<td style="text-align: right;">0.0308639</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>It is reassuring to see environmental protection as the most common code, and surprising (but not for that less accurate) to see anti-growth or degrowth feature in there.</p>
+</section>
+<section id="how-left--or-right-wing-are-they" class="level1">
+<h1>How left- or right-wing are they?</h1>
+<p>Learning about topic codes is important, but part of the reason we come up with lists of codes is in order to reduce complexity. One way of reducing complexity is to code topics as either “left” or “right-wing” based on a salience theory of communication, where parties concerned with equality talk about things they want to use to address inequality (market regulation, nationalisation), rather than engaging in a detailed discussion of why unfettered markets go wrong. That is, parties follow the maxim: “say what you’re for, rather than what you’re against”.</p>
+<p>The Manifesto Project’s RILE list of left- and right-wing codes has the following topics as left-wing:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>103 - Anti-Imperialism
+ - 105 - Military: Negative
+ - 106 - Peace
+ - 107 - Internationalism: Positive
+ - 202 - Democracy
+ - 403 - Market Regulation
+ - 404 - Economic Planning
+ - 406 - Protectionism: Positive
+ - 412 - Controlled Economy
+ - 413 - Nationalisation
+ - 504 - Welfare State Expansion
+ - 506 - Education Expansion
+ - 701 - Labour Groups: Positive</code></pre>
+</div>
+</div>
+<p>and the following topics as right-wing:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>104 - Military: Positive
+ - 201 - Freedom and Human Rights
+ - 203 - Constitutionalism: Positive
+ - 305 - Political Authority
+ - 401 - Free Market Economy
+ - 402 - Incentives
+ - 407 - Protectionism: Negative
+ - 414 - Economic Orthodoxy
+ - 505 - Welfare State Limitation
+ - 601 - National Way of Life: Positive
+ - 603 - Traditional Morality: Positive
+ - 605 - Law and Order: Positive
+ - 606 - Civic Mindedness: Positive</code></pre>
+</div>
+</div>
+<p>The Manifesto Project constructs a measure, RILE, which is the proportion of right-coded sentences, minus the proportion of left-coded sentences. How do the parties line up when we follow this procedure?</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-lr1" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lr1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="manifestos-2024_files/figure-html/fig-lr1-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lr1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Left right positions based on RILE scores for 2024 manifestos
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>This ordering makes some sense. Reform is to the right of the Conservative party, which in turn is to the right of the Labour Party. The Green Party, together with the Scottish National Party and Plaid Cymru, are to the left of both the Labour Party and the Liberal Democrats. There may, however, be some questions about the relative positioning of Labour and the Liberal Democrats: whilst the party has been very clearly to the left of Labour on some occasions (most notably under Charlie Kennedy’s leadership), the Liberal Democrats are still(!) led by a contributor to the <a href="https://en.wikipedia.org/wiki/The_Orange_Book">Orange Book</a>.</p>
+</section>
+<section id="how-have-the-parties-changed-since-2019" class="level1">
+<h1>How have the parties changed since 2019?</h1>
+<p>One natural question is: to what extent have the parties’ positions changed since 2019? Here I rely on <a href="https://doi.org/10.1111/1467-923X.13009">estimates produced by my colleague Nick Allen</a>, together with Judith Bara, with coding by Michelle Springfield. The following plot shows the parties’ 2024 scores on the horizontal axis, against their 2019 scores. The dotted line shows a 1:1 correspondence.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-lr2" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lr2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="manifestos-2024_files/figure-html/fig-lr2-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lr2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Comparison of 2024 and 2019 RILE scores
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Five of six plotted points land close to the dotted line, with Labour the big exception. The fact that Labour is in the lower right quadrant means that the party has moved substantially to the right.</p>
+<p>This finding is somewhat sensitive to the coding decisions made. Here’s a similar plot, but plotting both the hand-coded 2019 scores and an automated read of the 2019 Labour and Conservative manifestos, using the same process I have used above for 2024.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-lr3" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lr3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="manifestos-2024_files/figure-html/fig-lr3-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lr3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Comparison of 2024 and 2019 RILE scores with automated versions
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The automated reading of the 2019 manifestos would have Labour roughly <em>as</em> left-wing as the other left-wing parties, rather than being out to their flank, and the Conservatives more left-wing than a manual reading of the 2019 manifesto suggests. An apples-to-apples, LLM-to-LLM comparison would therefore suggest that both parties have moved to the right: the Conservatives a little bit, Labour a lot.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

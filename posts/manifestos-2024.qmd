@@ -1,0 +1,371 @@
+---
+title: "How left- or right-wing are parties' 2024 manifestos?"
+author: "Chris Hanretty"
+date: 2024-06-26
+categories: [parties, code, language]
+image: "bert.png"
+page-layout: article
+toc: true
+toc-depth: 3
+execute:
+  eval: true
+  echo: false
+---
+
+Roughly two weeks ago most of the parties released their 2024 general
+election manifestos. 
+
+Manifestos are a key source of information about parties'
+priorities. They allow us to form expectations about what future
+governments will do, and allow us to test whether governments did in
+fact deliver what was promised by the party or parties making up
+government.
+
+Manifestos are most used in political science as the basis for
+inferring parties' positions on a left-right scale, whether that is on
+the basis of [proportions of "right" and "left-wing"
+(quasi-)sentences](https://manifestoproject.wzb.eu/down/papers/budge_right-left-scale.pdf),
+or some more [complicated](https://doi.org/10.1177/13540688211026076)
+[transformation](https://doi.org/10.1111/j.1939-9162.2010.00006.x) of
+those counts.
+
+Placing parties on a left-right scale on the basis of their manifesto
+usually involves coded parts of that sentence in different pre-defined
+categories. This work can take a long time if performed by
+humans. Recently it's become possible to carry out this coding task
+automatically using large language models. The [Manifesto Project
+itself has fine-tuned a large language
+model](https://huggingface.co/manifesto-project/manifestoberta-xlm-roberta-56policy-topics-context-2023-1-1)
+to categorize manifestos.
+
+In this post, I use that LLM to position the parties on the left-right
+scale. I'm not the first to do this -- Kevin Farnsworth has done the
+same thing -- but I will be sharing all of my materials in case it's
+of use to people. My emphasis is on sharing a first approximation
+rather than a finished product: if I were using this for an academic
+article I would want to spend longer cleaning the texts and checking
+the sentence splitting was working properly. 
+
+# What did the parties talk most about? 
+
+Our first pass at the data has to involve the different Manifesto
+Project categories themselves. If we can't understand the distribution
+of text across topic codes, we can't understand anything built on
+those codes.
+
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(arrow)
+library(hrbrthemes)
+library(ggrepel)
+library(knitr)
+here::i_am("posts/manifestos-2024.qmd")
+set.seed(464)
+### Read in the parquet files
+
+infiles <- list.files(here::here("distilled"),
+                      pattern = ".parquet",
+                      full.names = TRUE)
+
+abc <- function(..., desc = FALSE) {
+  data <- tidyselect::peek_data()
+  named_selection <- tidyselect::eval_select(rlang::expr(c(...)), data)
+  named_selection[order(names(named_selection), named_selection, decreasing = desc)]
+}
+
+read_func <- function(x) {
+    read_parquet(x) |>
+        mutate(file = x,
+               party = sub(".*/", "", file),
+               party = sub(".parquet", "", party)) |>
+        dplyr::select(sents, file, party,
+                      abc(everything()))
+}
+
+dat <- lapply(infiles, read_func) |>
+    bind_rows()
+
+### At the moment, categories are on the columns
+dat <- dat |>
+    pivot_longer(cols = 4:last_col(),
+                 names_to = "code") |>
+    mutate(code.num = parse_number(code))
+
+left_codes <- c(103, 105, 106, 107, 202, 403, 404, 406, 412, 413, 504,
+                506, 701)
+
+right_codes <- c(104, 201, 203, 305, 401, 402, 407, 414, 505, 601,
+                 603, 605, 606)
+smry <- dat |>
+    group_by(party, code, code.num) |>
+    summarize(sumval = sum(value)) |>
+    group_by(party) |>
+    mutate(share = sumval / sum(sumval))
+```
+
+
+With that in mind, here's the proportion of sentences (or things
+recognized as sentences by the `tidytext` package) belonging to the
+top ten topic codes, in the Labour manifesto.
+
+```{r, results = "as-is"}
+#| label: tbl-lab10
+#| tbl-cap: Top ten topic codes in the Labour manifesto
+smry |>
+    ungroup() |>
+    filter(party == "lab") |>
+    arrange(desc(share)) |>
+    head(n = 10) |>
+    dplyr::select(Topic = code, Proportion = share) |>
+    kable()
+```
+
+The top entry -- welfare state expansion -- is perhaps unsurprising to
+see in the manifesto of a nominally left-wing party. What might be
+more surprising are that "law and order: positive" and "political
+authority" are second and third. These two codes are often taken to be
+(culturally or generally) "right-wing" codes. Let's see some sample
+sentences coded as "law and order: positive" (more accurately:
+sentences for which "law and order: positive" had the highest
+probability of membership):
+
+```{r}
+tmp <- dat |>
+    filter(party == "lab") |>
+    group_by(sents) |>
+    arrange(desc(value)) |>
+    slice(1) |>
+    ungroup() |>
+    filter(code.num == "605") |>
+    arrange(desc(value)) |>
+    head() |>
+    pull(sents) |>
+    cat(sep = "\n - ")
+```
+
+Now let's see some sentences which are coded as "political authority":
+
+```{r}
+tmp <- dat |>
+    filter(party == "lab") |>
+    group_by(sents) |>
+    arrange(desc(value)) |>
+    slice(1) |>
+    ungroup() |>
+    filter(code.num == "305") |>
+    arrange(desc(value)) |>
+    head() |>
+    pull(sents) |>
+    cat(sep = "\n - ")
+```
+
+These sentences seem to be divided between sentences positioning
+Labour as a party which has authority, and sentences criticising the
+Conservatives for eroding the authority of the state.
+
+If Labour wrote most about welfare state expansion, law and order, and
+political authority, what did the Conservatives write about?
+
+```{r, results = "as-is"}
+#| label: tbl-con10
+#| tbl-cap: Top ten topic codes in the Conservative manifesto
+smry |>
+    ungroup() |>
+    filter(party == "con") |>
+    arrange(desc(share)) |>
+    head(n = 10) |>
+    dplyr::select(Topic = code, Proportion = share) |>
+    kable()
+```
+
+The table is surprisingly similar. Seven issues appear in both top ten
+lists. Just to show you that the classifier is not a stopped clock
+which always spits out the same probabilities of membership in these
+categories, here's the top ten list for the Green Party of England and
+Wales:
+
+```{r, results = "as-is"}
+#| label: tbl-green10
+#| tbl-cap: Top ten topic codes in the Green party manifesto
+smry |>
+    ungroup() |>
+    filter(party == "green") |>
+    arrange(desc(share)) |>
+    head(n = 10) |>
+    dplyr::select(Topic = code, Proportion = share) |>
+    kable()
+```
+
+It is reassuring to see environmental protection as the most common
+code, and surprising (but not for that less accurate) to see
+anti-growth or degrowth feature in there.
+
+
+# How left- or right-wing are they?
+
+Learning about topic codes is important, but part of the reason we
+come up with lists of codes is in order to reduce complexity. One way
+of reducing complexity is to code topics as either "left" or
+"right-wing" based on a salience theory of communication, where
+parties concerned with equality talk about things they want to use to
+address inequality (market regulation, nationalisation), rather than
+engaging in a detailed discussion of why unfettered markets go
+wrong. That is, parties follow the maxim: "say what you're for, rather
+than what you're against". 
+
+The Manifesto Project's RILE list of left- and right-wing codes has
+the following topics as left-wing:
+
+```{r}
+dat |>
+    filter(code.num %in% left_codes) |>
+    distinct(code, code.num) |>
+    arrange(code) |>
+    pull(code) |>
+    cat(sep = "\n - ")
+```
+
+and the following topics as right-wing:
+
+```{r}
+dat |>
+    filter(code.num %in% right_codes) |>
+    distinct(code, code.num) |>
+    arrange(code) |>
+    pull(code) |>
+    cat(sep = "\n - ")
+```
+
+The Manifesto Project constructs a measure, RILE, which is the
+proportion of right-coded sentences, minus the proportion of
+left-coded sentences. How do the parties line up when we follow this
+procedure?
+
+```{r}
+#| label: fig-lr1
+#| fig-cap: "Left right positions based on RILE scores for 2024 manifestos"
+dat <- dat |>
+    mutate(is_left = code.num %in% left_codes,
+           is_right = code.num %in% right_codes)
+
+smry <- dat |>
+    group_by(party) |>
+    summarize(rile = (sum(is_right * value) - sum(is_left * value)) / sum(value),
+              rile = rile * 100) |>
+    mutate(y = 2024)
+
+ggplot(smry, aes(x = rile, y = y, fill = party)) +
+    geom_point(shape = 21) +
+    scale_x_continuous("Left-right score 2024") +
+    geom_text_repel(aes(label = party)) + 
+    scale_fill_manual("Party",
+                      values = c("darkblue", "green", "red", "goldenrod", "forestgreen", "purple", "yellow"),
+                      guide = "none") +
+    theme_ipsum_rc() +
+    theme(
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+
+
+```
+
+This ordering makes some sense. Reform is to the right of the
+Conservative party, which in turn is to the right of the Labour
+Party. The Green Party, together with the Scottish National Party and
+Plaid Cymru, are to the left of both the Labour Party and the Liberal
+Democrats. There may, however, be some questions about the relative
+positioning of Labour and the Liberal Democrats: whilst the party has
+been very clearly to the left of Labour on some occasions (most
+notably under Charlie Kennedy's leadership), the Liberal Democrats are
+still(!) led by a contributor to the [Orange
+Book](https://en.wikipedia.org/wiki/The_Orange_Book).
+
+
+# How have the parties changed since 2019?
+
+One natural question is: to what extent have the parties' positions
+changed since 2019? Here I rely on [estimates produced by my colleague
+Nick Allen](https://doi.org/10.1111/1467-923X.13009), together with
+Judith Bara, with coding by Michelle Springfield. The following plot
+shows the parties' 2024 scores on the horizontal axis, against their
+2019 scores. The dotted line shows a 1:1 correspondence.
+
+```{r}
+#| label: fig-lr2
+#| fig-cap: "Comparison of 2024 and 2019 RILE scores"
+#| warning: false
+lag <- data.frame(party = c("con", "green", "lab", "ldem", "plaid", "reform", "snp"),
+                  lag_rile = c(6.2, -20.4, -31.8, -19.6, -18.7, NA, -24.5))
+
+smry <- left_join(smry, lag, by = "party")
+
+ggplot(smry, aes(x = rile, y = lag_rile, fill = party)) +
+    geom_point(shape = 21) +
+    scale_x_continuous("Left-right score 2024") +
+    scale_y_continuous("Left-right score 2019") +
+    geom_text_repel(aes(label = party)) + 
+    scale_fill_manual("Party",
+                      values = c("darkblue", "green", "red", "goldenrod", "forestgreen", "purple", "yellow"),
+                      guide = "none") +
+    geom_abline(slope = 1, linetype = 2) + 
+    theme_ipsum_rc()
+
+
+```
+
+Five of six plotted points land close to the dotted line, with Labour
+the big exception. The fact that Labour is in the lower right quadrant
+means that the party has moved substantially to the right. 
+
+This finding is somewhat sensitive to the coding decisions
+made. Here's a similar plot, but plotting both the hand-coded 2019
+scores and an automated read of the 2019 Labour and Conservative
+manifestos, using the same process I have used above for 2024.
+
+
+```{r}
+#| label: fig-lr3
+#| fig-cap: "Comparison of 2024 and 2019 RILE scores with automated versions"
+#| warning: false
+alt <- data.frame(party = c("lab", "con"),
+                  rile = smry$rile[match(c("lab", "con"), smry$party)],
+                  lag_rile = c(-21.8, -0.922),
+                  label = "2019 [automated]") 
+
+ggplot(smry, aes(x = rile, y = lag_rile, fill = party)) +
+    geom_point(shape = 21, alpha = 0.5) +
+    scale_x_continuous("Left-right score 2024") +
+    scale_y_continuous("Left-right score 2019") +
+    geom_text_repel(aes(label = party)) + 
+    scale_fill_manual("Party",
+                      values = c("darkblue", "green", "red", "goldenrod", "forestgreen", "purple", "yellow"),
+                      guide = "none") +
+    geom_abline(slope = 1, linetype = 2) +
+    geom_point(data = alt, aes(fill = party), alpha = 1) +
+    geom_text_repel(data = alt, aes(label = paste0(party, label))) + 
+    theme_ipsum_rc()
+
+```
+
+The automated reading of the 2019 manifestos would have Labour roughly
+*as* left-wing as the other left-wing parties, rather than being out
+to their flank, and the Conservatives more left-wing than a manual
+reading of the 2019 manifesto suggests. An apples-to-apples,
+LLM-to-LLM comparison would therefore suggest that both parties have
+moved to the right: the Conservatives a little bit, Labour a lot.
+
+# Conclusions
+
+As you might expect from [my other
+work](http://chrishanretty.co.uk/posts/finetuning/), I believe that
+large language models can help researchers code large volumes of text
+quickly and reliably. In writing this blog post, I've experienced more
+unease defending the RILE schema than I have defending the coding
+decisions made by the large language model. Any systematic process
+will, when applied to enough data, inevitably generate one or two
+decisions that seem implausible, but I think that for existing schema
+with large volumes of training data, LLMs reduce that number to the
+bare minimum.
